@@ -1,0 +1,695 @@
+#################### ---- Punto 3 taller 3 ---- ######################
+
+# Nota: Tipos de bootstrap que se consideraran en la presente simulación:
+## Bootstrap: Remuestreo a nivel de observación (bootstrap convencional)
+## Cluster Bootstrap: Remuestreo a nivel de cluster
+## Wild Cluster Bootstrap: Remuestre de los residuales, manteniendo fijas las variables de interés 
+
+# Limpiar entorno de trabajo: 
+rm(list = ls())
+
+# Tidymodels: Es un conjunto de paquetes o libreria en R bastante útiles
+## Entre los paquetes que se importan al importar tidymodels están:
+### dplyr: manipular bases de datos
+### tidyr: manipular bases de datos (en particular la forma del data frame)
+### ggplot2: graficación en R 
+### broom: para obtener información de modelos 
+### rsample: bootstrapping y otros tipos de remuestreo 
+library(tidymodels)
+
+# Bibliotecas para calcular errores robustos en R
+library(estimatr)
+
+# Librería para simular distribuciones normal multivariada
+library(mvtnorm)
+
+# Librería para exportar un dataframe a latex
+library(xtable)
+
+# Defino semilla 
+set.seed(12345)
+
+# Nota: El paquete "rsample" es clave para realizar realiza el remuestreo con reemplazo (bootstrapping)
+#       Dicho paquete, permite realizar tanto bootstrapping convencional como 
+#       cluster bootstrapping (luego de realizar algunas modificaciones a la base de datos sobre la cual se va 
+#       a hacer el remuestreo con reemplazo)
+
+# a) Estimación usual por MCO ---- 
+
+# i. ---- 
+
+# Inicialización de la matriz que contendrá toda la información de los diferentes tipos de bootstrap
+mat_info = matrix(nrow = 5, ncol = 12)
+
+# ii. y iii. ---- 
+
+# Tamaño de muestra para usar en la simulación
+n_muestra = as.integer(100)
+
+# Número de clusters 
+n_clusters = as.integer(0)
+
+# Simulación de los betas originales
+b0 = rnorm(1, mean = 0.5, sd = 1)
+b1 = rnorm(1, mean = 7, sd = 2)
+b2 = rnorm(1, mean = 0, sd = 3)
+b = c(b0, b1, b2)
+
+# Función para simular los datos
+sim_datos = function(n_muestra, betas){
+  # Defino semilla 
+  set.seed(12345)
+  
+  # Simulacion término de error
+  e = rnorm(n_muestra, mean = 0, sd = 1)
+  
+  # Siulación de las dos variables independientes a partir de una distribución 
+  # normal multivariada
+  
+  mean_x = c(7, 12)
+  sigma_x = cbind(c(9, 4), c(4, 16))
+  
+  x = rmvnorm(n = n_muestra, mean = mean_x, sigma = sigma_x)
+  colnames(x) = c("variable_indpendiente_1", "variable_indpendiente_2")
+  
+  # Simulación de la variable dependiente
+  
+  # Incializo la variable dependiente
+  variable_dependiente = c()
+  # Incialización identificador observación
+  identificador_observacion = c()
+  
+  # Ejecuto el for para llenar el vector de variables dependientes
+  for (i in 1:length(e)){
+    # modelo: (b0 es betas[1], b1 es betas[2] y b2 es betas[3], dado que el contador de R empieza en 1)
+    y = betas[1] + betas[2] * x[[i,1]] + betas[3] * x[[i,2]] + e[i]
+    # append variable dependiente
+    variable_dependiente = append(variable_dependiente, y)
+    # append variable de identificación 
+    identificador_observacion = append(identificador_observacion, i)
+  }
+  # La función me retorna un dataframe para poder hacer la estimación del modelo en el paso iv. 
+  mat_final = cbind(identificador_observacion, variable_dependiente, x)
+  df = as.data.frame(mat_final)
+  return(df)
+}
+
+# muestra_orig va a ser la "muestra original" que va a ser remuestreada con reemplazo (de diferentes formas)
+# para los diferentes tipos de bootstrapping que se van a implementar 
+muestra_orig = sim_datos(n_muestra, betas = b) # Resultado de la simulación original/primaria
+
+# iv. ----
+
+# Visualización base de datos "original"
+glimpse(muestra_orig)
+
+# Estimación del modelo 
+# Ejecuto el comando para estimar el modelo de regresión 
+reg1 = lm(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, data = muestra_orig) 
+# El comando tidy me permite ver los resultados de la regresión en formato de data.frame
+reg1_sum = tidy(reg1) # Para recuperar de manera sencilla los coeficientes, errores estándar y los p-valores
+
+# LLeno las columnas de la matriz mat_info: 
+
+## columna 1: 
+mat_info[, 1] = c(reg1_sum$estimate, n_muestra, n_clusters)
+## columna 2: 
+mat_info[, 2] = c(reg1_sum$std.error, n_muestra, n_clusters)
+## columna 3: 
+mat_info[, 3] = c(reg1_sum$p.value, n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# b) bootstrap ---- 
+
+# i. a v. ----
+
+# Número de muestras de tamaño "n_muestra" que se generaran por bootstrapping (remuestreo con reemplazo)
+n_boots = as.integer(1000)
+
+# La presente función ejecuta un bootstrapping convencional, que implica un remuestreo con reemplazo a nivel de 
+# observación 
+bootstrap_conv = function(n_boots, n_muestra, muestra_orig){
+  # Defino semilla 
+  set.seed(12345)
+  
+  # Inicialización de la matriz que va a ser usada para almacenar los parámetros estimados
+  # en cada una de las muestras generadas por remuestreo con reemplazo de la "muestra original"
+  matriz_b = matrix(nrow = 1000, ncol = 3) # matriz generada para el punto b
+  colnames(matriz_b) = c("b0", "b1", "b2")
+  
+  # Por cada iteración nueva se va a generar una nueva muestra obtenida por remuestreo 
+  # con reemplazo a nivel de observación (i.e., una muestra obtenida por bootstarpping convencional). Cada muestra 
+  # aleatoria se obtiene remuestre con reemplazo de muestra_orig (que es la muestra original)
+  for (i in 1:n_boots){
+    # Comando bootstraps: 
+    # el comando bootstraps(data, times, strata) me permite hacer un remuestreo con reemplazo para una muestra original
+    # el comando retorna un dataframe con dos columnas:
+    ### 1. columna: es una lista de muestras generadas por bootstrapping (es un list-column, que básicamente es una columna tipo lista)
+    ### 2. columna: es un identificador para cada muestra generada por bootstrap (es una variable carácter)
+    # argumentos del comando: 
+    ### data: muestra a la que se le va a realizar los diferentes remuestreos con reemplazo (bootstrapping)
+    ### times: cuantos muestras generadas por bootrapping se quieren realizar
+    ### strata: para realizar un remuestreo estratificado por una variable en específico. Este remuestreo
+    ###         es diferente a realizar cluster bootstrapping en la medida de que realiza un remuestre a nivel individual, pero haciendo
+    ###         el remuestreo diferenciando por el stratum, lo cuál es diferente a reuestrea por clusters
+    # Para extraer una muestra específica generada por bootstrapping se debe: 
+    # objeto_generado_bootstrappings$splits[[numero_de_la_muestra_bootstrapping]]
+    
+    # básicamente cada elemente del objeto que arroja el comando "bootstraps" es una muestra generada por remuestreo con
+    # reemplazo (i.e por bootstrapping)
+    
+    boot_df = muestra_orig %>% 
+      bootstraps(times = 1)
+    
+    # Realizo la regresión con la nueva base de datos obtenida por bootstrapping (boot_df)
+    reg_boot = lm(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, data = boot_df$splits[[1]])
+    reg_boot_sum = tidy(reg_boot) # Para recuperar de manera sencilla los coeficientes, errores estándar y los p-valores de la regresión en boot_df
+    
+    # Voy llenando fila por fila de la matriz_b hasta llenar la fila completa
+    matriz_b[i, ] = reg_boot_sum$estimate
+  }
+  # Retorno un dataframe con los coeficientes estimados para cada muestra generada por bootstrapping 
+  df = as.data.frame(matriz_b)
+  return(df)
+}
+
+# Data frame que contiene los coeficientes estimados para cada muestra generada por bootstrapping 
+boot_conv_df = bootstrap_conv(n_boots, n_muestra, muestra_orig)
+
+# vi. ----
+
+# Nota: errores estándar bootstrap
+## Es la desviación estándar de las distribuciones generadas para cada coeficiente mediante el procedimiento 
+## de bootstrapping 
+
+# Visualización de la base de datos con los coeficientes obtenidos para cada muestra generada por bootstrapping  
+glimpse(boot_conv_df)
+
+# Características de cada coeficiente e histograma : 
+## b0
+mean_b0_boot_conv = mean(boot_conv_df$b0)
+sd_b0_boot_conv = sd(boot_conv_df$b0) # error estándar bootstrapping para b0
+
+## b1
+mean_b1_boot_conv = mean(boot_conv_df$b1)
+sd_b1_boot_conv = sd(boot_conv_df$b1) # error estándar bootstrapping para b1
+
+## b2
+mean_b2_boot_conv = mean(boot_conv_df$b2)
+sd_b2_boot_conv = sd(boot_conv_df$b2) # error estándar bootstrapping para b2
+
+# Vector con todos los errores estándar asociados a cada coeficiente obtenidos para cada muestra generada por bootstrapping  
+sd_vect_boot_conv = c(sd_b0_boot_conv, sd_b1_boot_conv, sd_b2_boot_conv)
+
+# Visualización de cada coeficiente 
+
+# Función para generar la función de densidad para cada coeficiente 
+histogram_b = function(df, titulo, x_lab, y_lab, num_bins = 30, y_upper_limit, coef_b, mean_b, b_original, b_muestra_estimada_original){
+  histog_grid = df %>% 
+    ggplot(aes(x = coef_b)) +
+    scale_y_continuous(limits = c(0, y_upper_limit)) +
+    geom_histogram(aes(y = ..density..), color = "black", bins = num_bins) + 
+    geom_density(color = "green") +
+    geom_vline(xintercept = mean_b, color = "red") +
+    geom_vline(xintercept = b_original, color = "blue") +
+    geom_vline(xintercept = b_muestra_estimada_original, color = "yellow") +
+    ggtitle(titulo) +
+    xlab(x_lab) + 
+    ylab(y_lab) +
+    theme_light() 
+}
+
+x11()
+# Función de densidad para b0
+densidad_b0 = histogram_b(df = boot_conv_df, titulo = "Distribución empírica de los b0 generados por bootstrapping", 
+                         x_lab = "Valores de b0 simulados por bootstrapping", y_lab = "", y_upper_limit = 1.2,  
+                         num_bins = 30, coef_b = boot_conv_df$b0, mean_b = mean_b0_boot_conv,
+                         b_muestra_estimada_original = reg1_sum$estimate[1], b_original = b[1]); densidad_b0
+
+# Función de densidad para b1
+densidad_b1 = histogram_b(df = boot_conv_df, titulo = "Distribución empírica de b1 generados por bootstrapping", 
+                          x_lab = "Valores de b1 simulados por bootstrapping", y_lab = "", y_upper_limit = 12.5,  
+                          num_bins = 30, coef_b = boot_conv_df$b1, mean_b = mean_b1_boot_conv,
+                          b_muestra_estimada_original = reg1_sum$estimate[2], b_original = b[2]); densidad_b1
+
+# Función de densidad para b2
+densidad_b2 = histogram_b(df = boot_conv_df, titulo = "Distribución empírica de b2 generados por bootstrapping", 
+                          x_lab = "Valores de b2 simulados por bootstrapping", y_lab = "", y_upper_limit = 14,  
+                          num_bins = 30, coef_b = boot_conv_df$b2, mean_b = mean_b2_boot_conv,
+                          b_muestra_estimada_original = reg1_sum$estimate[3], b_original = b[3]); densidad_b2
+
+# vii.  ----
+
+# LLeno las columnas de la matriz mat_info: 
+
+## columna 4: 
+mat_info[, 4] = c(sd_vect_boot_conv, n_muestra, n_clusters)
+
+## columna 5: 
+
+# grados de una distribución t: T - K
+## donde T son el número de observaciones de la muestra y K el número de parámetros en la muestra
+grados_t = n_muestra - length(b)
+
+# estadístico t: 
+## estadístico t y p-valor para el parámetro b0: t0 y p_value_0
+t0 = reg1_sum$estimate[1]/sd_b0_boot_conv
+p_value_0 = pt(t0, df = grados_t, lower.tail = FALSE)
+## t1
+t1 = reg1_sum$estimate[2]/sd_b1_boot_conv
+p_value_1 = pt(t1, df = grados_t, lower.tail = FALSE)
+## t2
+t2 = reg1_sum$estimate[3]/sd_b2_boot_conv
+p_value_2 = pt(t2, df = grados_t)
+
+# vector de p-valores:
+p_value = c(p_value_0, p_value_1, p_value_2)
+
+mat_info[, 5] = c(p_value, n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# Como se puede observar, en ausencia de correlación cluster, los errores están bien comportados, y por tanto, los 
+# errores estándar convencionales y los calculados por bootstrapping convecional (bootstrapping que realiza 
+# remuestreo a nivel de observación) dan valores muy parecidos, lo que muestra que en ausencia de 
+# heterocedasticadad o autocorrelación en los errores, ambos procedimiento para calcular errores estándar son válidos
+
+# c)  ---- 
+
+# i. ----
+
+# Nota: slice (dplyr)
+## Permite: seleccionar, remover y duplicar filas 
+
+# Expande/duplica la base de datos diez veces usando dplyr
+muestra_orig_10 = muestra_orig %>% 
+  slice(rep(row_number(), 10))
+
+# Con lo anterior se obtuvo una base de datos de 1000 observaciones, dado que la base original (muestra_orig) 
+# tenía un tamaño de 100 datos, y cada fila de dicha base orginal se duplicó 10 veces. 
+
+# Dado que cada fila se duplico, todos las observaciones que compartan el mismo número de identificador_observacion
+# no solo harán parte del mismo cluster, sino que también van a tener una correlación entre clusters de exactamente
+# igual a 1, dado que todas las observaciones que pertenezcan al mismo cluster, virtualmente van a ser la misma
+# observación, con los mismos valores en todas las variables
+
+# ii. ----
+
+
+# Visualización base de datos expandida/duplicada
+glimpse(muestra_orig_10)
+
+# Estimación del modelo 
+# Ejecuto el comando para estimar el modelo de regresión 
+reg_10 = lm(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, data = muestra_orig_10) 
+# El comando tidy me permite ver los resultados de la regresión en formato de data.frame
+reg_10_sum = tidy(reg_10) # Para recuperar de manera sencilla los coeficientes, errores estándar y los p-valores
+
+# iii. ----
+
+# Tamaño de muestra para usar en la simulación
+n_muestra = as.integer(nrow(muestra_orig_10))
+
+# Número de clusters 
+n_clusters = as.integer(max(muestra_orig_10$identificador_observacion))
+
+# LLeno las columnas de la matriz mat_info: 
+
+## columna 6: 
+mat_info[, 6] = c(reg_10_sum$std.error, n_muestra, n_clusters)
+## columna 7: 
+mat_info[, 7] = c(reg_10_sum$p.value, n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# Los resultados claramente muestran que ignorar la correlación entre unidades a nivel cluster puede resultar 
+# en errores estándar menores a los reales. Lo anterior, claramente es cierto en la medida que se puede
+# observar que los valores de los errores estándar son menores cuando no se trata la correlación cluster a
+# comparación de cuando no hay correlación clúster. 
+
+# iv. ----
+
+# El procedimiento realizado en el literal i. genera correlación cluster de los errores en la medida que se están haciendo
+# 10 duplicadas excatas de cada observación por lo que no solo se están generando 100 clústers (habían 100 observaciones
+# originales) sino que cada miembre de cada clúster es excatamente idéntico (con los valores para cada variable igual), 
+# lo que hacen que haya una correlación exactamente igual a 1, entre miembros de un mismo cluster. 
+
+# d) ----
+
+# En este caso, los clústers están conformados por las unidades que comparten el mismo "identificador_observación", en 
+# particular, las observaciones que comparten el mismo "identificador_observación" son exactamente iguales. 
+
+# Estimación del modelo con errores estándar clúster
+# lm_robust: estima un modelo lineal, provee una variedad de opciones para errores estándar robustos (entre ellos errores
+# estándar clúster) y puede conducir test sobre los coeficientes estimados 
+# calcula de manera simultánea la regresión lineal y la matriz de varianzas y covarianzas correspondiente al tipo 
+# de error robusto que se seleccione (gran variedad de opciones para calculo de errores robustos)
+reg_cluster_estimatr = lm_robust(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, 
+                          clusters = identificador_observacion, 
+                          data = muestra_orig_10); reg_cluster_estimatr
+
+# Claramente se oberva que al emplear el comando lm_robust, los errores estándar clúster sí "corrigen" el problema 
+# de subestimaciónde los errores estándar cuando hay presencia de correlación clúster en la muestra. Como se puede
+# observar los errorres estándar clúster tienen magnitudes cercanas a los errores estándar cuadno no había presencia de
+# correlación clúster en la muestra
+
+# LLeno las columnas de la matriz mat_info: 
+
+## columna 8: 
+mat_info[, 8] = c(reg_cluster_estimatr$std.error, n_muestra, n_clusters)
+## columna 9: 
+mat_info[, 9] = c(reg_cluster_estimatr$p.value, n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# e) cluster bootstrap ---- 
+
+# i. a v. ----
+
+# La presente función ejecuta un bootstrapping convencional, que implica un remuestreo con reemplazo a nivel de
+# observación
+cluster_bootstrap = function(n_boots, n_muestra, muestra_cluster){
+  # Defino semilla
+  set.seed(12345)
+
+  # Inicialización de la matriz que va a ser usada para almacenar los parámetros estimados
+  # en cada una de las muestras generadas por cluster bootstrap de la muestra con clusters (muestra_cluster)
+  matriz_e = matrix(nrow = 1000, ncol = 3) # matriz generada para el punto e
+  colnames(matriz_e) = c("b0", "b1", "b2")
+  
+  # Nota: cluster_bootstarap: remuestreo con reemplazo a nivel de clúster (es decir en vez de remuestrear observación por observación,
+  #       remuestre cluster por cluster)
+
+  # Por cada iteración nueva se va a generar una nueva muestra obtenida por cluster bootstrap (remuestreo aleatorio)
+  # con reemplazo a nivel de cluster (i.e., una muestra obtenida por cluster bootstrapping). Cada muestra
+  # aleatoria se obtiene remuestreando con reemplazo muestra_cluster (que es la muestra original para hacer la simulación)
+  for (i in 1:n_boots){
+    # Se usa de manera inteligente el comando "bootstraps" para lograr hacer el remuestreo aleatorio con reemplazo a nivel de clúster
+    # Los clústers están dados por: identificador_observacion
+    # En total hay 100 clústers, cada uno con 10 observaciones idénticas
+    
+    # Procedimiento:
+    
+    ## 1. Utilizo el comando nest() para transformar el dataframe original en un dataframe
+    ##    cuya segunda columna es una list-column, es decir, cada elemento de la segunda
+    ##    columna va a ser un dataframe cuyas columnas serán todas las columas 
+    ##    diferentes a la variable que indica el clúster, en nuestro, caso todas las columnas
+    ##    diferentes a identificador_observacion van a hacer parte de los dataframes "internos" 
+    ##    que serán los elementos de la list-column
+    muestra_cluster_nested = muestra_cluster %>% 
+      nest(data = !identificador_observacion)
+    
+    ## 2. Realizó el bootstrapping sobre el dataframe muestra_cluster_nested. 
+    ##    como ahora cada "fila" es en realidad un dataframe cuyas observaciones pertenecen a un cluster específico
+    ##    cuando hago el remuestreo sobre este dataframe estoy haciendo efectivamente un cluster bootstrapping
+    boot_df = muestra_cluster_nested %>% 
+      bootstraps(times = 1)   # solo genero una muestra de bootstrapping por iteración 
+    
+    ## 3. Finalmente, luego de realizar el cluster bootstrapping, utilizó el comando unnest() para transformar 
+    ##    el dataframe generado por el cluster bootstrapping de nuevo a un dataframe normal o en lugar de estar
+    ##    agrupado cada fila por cluster (unnest() me permite pasar de tener filas que represente cluster completos
+    ##    a filas que vueltan a representar observaciones individuales)
+    boot_df_unnest = as_tibble(boot_df$splits[[1]]) %>% 
+      unnest(data)
+
+    # Realizo la regresión con la nueva base de datos obtenida por cluster bootstrapping (boot_df_unnest)
+    reg_boot = lm(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, data = boot_df_unnest)
+    reg_boot_sum = tidy(reg_boot) # Para recuperar de manera sencilla los coeficientes, errores estándar y los p-valores de la regresión en boot_df
+
+    # Voy llenando fila por fila de la matriz_e hasta llenar la fila completa
+    matriz_e[i, ] = reg_boot_sum$estimate
+  }
+  # Retorno un dataframe con los coeficientes estimados para cada muestra generada por cluster bootstrapping
+  df = as.data.frame(matriz_e)
+  return(df)
+}
+
+# Data frame que contiene los coeficientes estimados para cada muestra generada por cluster bootstrapping 
+cluster_bootstrap_df = cluster_bootstrap(n_boots, n_muestra, muestra_orig_10)
+
+# vi. ----
+
+# Nota: errores estándar clúster bootstrap
+## Es la desviación estándar de las distribuciones generadas para cada coeficiente mediante el procedimiento 
+## de bootstrapping 
+
+# Visualización de la base de datos con los coeficientes obtenidos para cada muestra generada por bootstrapping  
+glimpse(cluster_bootstrap_df)
+
+# Características de cada coeficiente e histograma : 
+## b0
+mean_b0_cluster_boot = mean(cluster_bootstrap_df$b0)
+sd_b0_cluster_boot = sd(cluster_bootstrap_df$b0) # error estándar bootstrapping para b0
+
+## b1
+mean_b1_cluster_boot = mean(cluster_bootstrap_df$b1)
+sd_b1_cluster_boot = sd(cluster_bootstrap_df$b1) # error estándar bootstrapping para b1
+
+## b2
+mean_b2_cluster_boot = mean(cluster_bootstrap_df$b2)
+sd_b2_cluster_boot = sd(cluster_bootstrap_df$b2) # error estándar bootstrapping para b2
+
+# Vector con todos los errores estándar asociados a cada coeficiente obtenidos para cada muestra generada por bootstrapping  
+sd_vect_cluster_boot = c(sd_b0_cluster_boot, sd_b1_cluster_boot, sd_b2_cluster_boot)
+
+# Visualización de cada coeficiente 
+
+x11()
+# Función de densidad para b0
+densidad_b0 = histogram_b(df = cluster_bootstrap_df, titulo = "Distribución empírica de b0 generados por cluster bootstrapping", 
+                          x_lab = "Valores de b0 simulados por cluster bootrstrapping", y_lab = "", y_upper_limit = 1.2,  
+                          num_bins = 30, coef_b = cluster_bootstrap_df$b0, mean_b = mean_b0_cluster_boot,
+                          b_muestra_estimada_original = reg1_sum$estimate[1], b_original = b[1]); densidad_b0
+
+# Función de densidad para b1
+densidad_b1 = histogram_b(df = boot_conv_df, titulo = "Distribución empírica de b1 generados por cluster bootstrapping", 
+                          x_lab = "Valores de b1 simulados por cluster bootstrapping", y_lab = "", y_upper_limit = 12.5,  
+                          num_bins = 30, coef_b = cluster_bootstrap_df$b1, mean_b = mean_b1_cluster_boot,
+                          b_muestra_estimada_original = reg1_sum$estimate[2], b_original = b[2]); densidad_b1
+
+# Función de densidad para b2
+densidad_b2 = histogram_b(df = boot_conv_df, titulo = "Distribución empírica de b2 generados por cluster bootstrapping", 
+                          x_lab = "Valores de b2 simulados por cluster bootstrapping", y_lab = "", y_upper_limit = 14,  
+                          num_bins = 30, coef_b = cluster_bootstrap_df$b2, mean_b = mean_b2_cluster_boot,
+                          b_muestra_estimada_original = reg1_sum$estimate[3], b_original = b[3]); densidad_b2
+
+# vii.  ----
+
+# LLeno las columnas de la matriz mat_info: 
+
+## columna 10: 
+mat_info[, 10] = c(sd_vect_cluster_boot, n_muestra, n_clusters)
+
+## columna 11: 
+
+# grados de una distribución t: T - K
+## donde T son el número de observaciones de la muestra y K el número de parámetros en la muestra
+grados_t = n_muestra - length(b)
+
+# estadístico t: 
+## estadístico t y p-valor para el parámetro b0: t0 y p_value_0
+t0 = reg1_sum$estimate[1]/sd_b0_cluster_boot
+p_value_0 = pt(t0, df = grados_t, lower.tail = FALSE)
+## t1
+t1 = reg1_sum$estimate[2]/sd_b1_cluster_boot
+p_value_1 = pt(t1, df = grados_t, lower.tail = FALSE)
+## t2
+t2 = reg1_sum$estimate[3]/sd_b2_cluster_boot
+p_value_2 = pt(t2, df = grados_t)
+
+# vector de p-valores:
+p_value = c(p_value_0, p_value_1, p_value_2)
+
+mat_info[, 11] = c(p_value, n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# f) wild cluster bootstrap ---- 
+
+# i. ----
+
+# Estimación del modelo con errores estándar clúster
+reg_cluster_estimatr = lm_robust(variable_dependiente ~ variable_indpendiente_1 + variable_indpendiente_2, 
+                                 clusters = identificador_observacion, 
+                                 data = muestra_orig_10); reg_cluster_estimatr
+
+# ii. ----
+
+# Nota: Variables que se van a definir:  
+### y_pred_cluster: Valores predichos por la estimación/regresión usando errores estándar clúster 
+### residuales_cluster: Residuales de la estimación/regresión usando errores estándar clúster 
+
+muestra_orig_10 = muestra_orig_10 %>% 
+  mutate(y_pred_cluster = reg_cluster_estimatr$fitted.values) %>% 
+  mutate(residuales_cluster = muestra_orig_10$variable_dependiente - y_pred_cluster) %>% 
+  select(identificador_observacion, variable_dependiente, y_pred_cluster, residuales_cluster, everything())  
+
+# Parámetros (b) de la estimación/regresión usando errores estándar clúster 
+b_original = reg_cluster_estimatr$coefficients
+
+# iii. ----
+t_valores = reg_cluster_estimatr$statistic
+
+# iv. a viii. ----
+
+# Definición de funciones auxiliares para la realización del wild cluster bootstrapping ----
+
+# Función para generar la distribución de rademacher
+
+# Función para programar el proceso generador de datos de una distribución Rademacher
+# es decir, la función de probabilidad de una variable aleatoria Rademacher
+rademacher_distro_random_generator = function(){
+  # variables: 
+  ### rademacher: El valor que toma la variable aleatoria Rademacher (ya sea -1 o 1)
+  ### unif: El valor que toma la variable aleatoria uniforme continua entre 0 y 1
+  ### lógica de la función: Existe la misma probabilidad de que la variable aleatoria unif caiga entre cualquier de dos
+  ###                       intervalores del mismo tamaño. En particular, dos existe la misma probabilidad de que la 
+  ###                       variable aleatoria uniforme caiga en el intervalo 0 a 1/2 o 1/2 a 1, lo que lo hace apropiada
+  ###                       para simular una distribución Rademacher
+  rademacher = 0
+  unif = runif(n = 1, min = 0, max = 1)
+  if (unif < 0.5){
+    rademacher = -1
+  }else{
+    rademacher = 1
+  }
+  return(rademacher)
+}
+
+# Función para agregar el vector que contiene los resultados de simular la variable aleatoria Rademacher
+# en la base de datos 
+
+adiciones_rademacher_base = function(df){
+  rademacher_vector = c()
+  for (i in 1:nrow(df)){
+    rademacher_vector = append(rademacher_vector, rademacher_distro_random_generator())
+  }
+  df_final = df %>% 
+    mutate(v_c = rademacher_vector)
+  return(df_final)
+}
+
+# Función para construir el vector de t_b para cada iteración en donde se realiza la estimación con 
+# errores clusterizados 
+
+# Construcción de t_valores t_b
+construx_t_b = function(reg_cluster, b_original){
+  t_b = c()  
+  for (i in 1:length(b)){
+    t_j = (reg_cluster$coefficients[i] - b_original[i])/(reg_cluster$std.error[i])
+    t_b = append(t_b, t_j)
+  }
+  return(t_b)
+}
+
+# Función para construir cada fila de la matriz que almacenara todos los resultados de la variable indicativa, definida según la condición viii. 
+
+construx_indicadora = function(t_valores, t_b){
+  indicadora_vector = c() # va a ser un vector de 1 o 0 dependiendo de si t_b es mayor o menor a t_j
+  for (i in 1:length(t_b)){
+    if(abs(t_valores[i]) < abs(t_b[i])){
+      indicadora_vector = append(indicadora_vector, 1)
+    }else{
+      indicadora_vector = append(indicadora_vector, 0)
+    }    
+  }
+  return(indicadora_vector)
+}
+
+# Función que realiza la simulación del wild_cluster_bootstrap 
+
+wild_cluster_bootstrap = function(muestra_orig_10, t_valores, b_original){
+  # Defino semilla 
+  set.seed(12345)
+  
+  # matriz indicadora, es decir matriz que almacena 0 o 1 dependiendo del resultado de la condición viii. 
+  indicadora_matriz = matrix(nrow = 1000, ncol = 3)
+  
+  for (i in 1:1000){
+    # paso iv. 
+    
+    # Data frame clusterizado. Es decir, DataFrame cuya segunda columna es un list-column
+    # lo que permite que cada elemento de la list-column sea un dataframe (correspondiente a cada clúster)
+    muestra_orig_10_nested = muestra_orig_10 %>% 
+      nest(data = !identificador_observacion)  
+    
+    # La razón por la que genero "muestra_orig_10_nested" es porque para cada clúster necesito que la variable 
+    # aleatoria v_c (la variable aleatoria que tiene una distribución rademacher) tenga el mismo valor por clúster
+    # pero diferente valor para clústers diferentes 
+    
+    # Genero la variable aleatorio Rademacher para cada clúster 
+    muestra_orig_10_rademacher_nest = adiciones_rademacher_base(muestra_orig_10_nested)
+    
+    # Descomprimo la base de datos clústerizado para que cada fila ya no quede agrupada a nivel de clúster 
+    # sino a nivel individual nuevamente
+    muestra_orig_10_rademacher = muestra_orig_10_rademacher_nest %>% 
+      unnest(data)
+    
+    # paso v. 
+    
+    muestra_orig_10_final = muestra_orig_10_rademacher %>% 
+      mutate(y_estrella = y_pred_cluster + (residuales_cluster * v_c)) %>% 
+      select(identificador_observacion, variable_dependiente, y_estrella, y_pred_cluster, residuales_cluster, everything())
+    
+    # paso vi.
+    
+    # Estimación del modelo con errores estándar clúster usando la base de datos muestra_orig_10_final
+    # y la variable y_estrella como variable dependiente 
+    reg_y_estrella_cluster_estimatr = lm_robust(y_estrella ~ variable_indpendiente_1 + variable_indpendiente_2, 
+                                                clusters = identificador_observacion, 
+                                                data = muestra_orig_10_final); reg_y_estrella_cluster_estimatr
+    
+    # paso vii. 
+    
+    # Connstrucción de los t_b para cada regresión con errores clúster que se realice 
+    t_b = construx_t_b(reg_y_estrella_cluster_estimatr, b_original)
+    
+    # Lleno cada fila de la matriz que almacenara todos los resultados de la variable indicativa, definida según la condición viii. 
+    indicadora_matriz[i, ] = construx_indicadora(t_valores, t_b)  
+  }
+  # paso viii. 
+  # Transformo la matriz indicadora en un data frame 
+  df = as.data.frame(indicadora_matriz)
+  # Encuentro los p valores que arroja el wild cluster bootstrap 
+  p_values_wild_cluster_bootstrap = df %>% 
+    summarise(p_value_0 = mean(V1), p_value_1 = mean(V2), p_value_2 = mean(V3))  
+  return(p_values_wild_cluster_bootstrap)
+}
+
+p_values_wild_cluster_bootstrap = wild_cluster_bootstrap(muestra_orig_10, t_valores, b_original)
+
+# ix. ----
+
+## columna 12: 
+mat_info[, 12] = c(as.numeric(p_values_wild_cluster_bootstrap), n_muestra, n_clusters)
+
+# Visualización de la matriz mat_info hasta esta etapa del proceso
+mat_info
+
+# g. ----
+
+# Renombre cada una de las columnas de la matriz de información 
+colnames(mat_info) = c("coef. (1)", "Trad. E.E. (2)", 
+                       "Trad. p-valor (3)", "Boot. E.E. (4)", 
+                       "Boot. p-valor (5)", "x10 E.E. (6)", 
+                       "x10 p-valor (7)", "Clúster E.E. (8)", 
+                       "Clúster p-valor (9)", "Clúster Boot. E.E. (10)",
+                       "Clúster Boot. p-valor (11)", "Wild boot. p-valor (12)")
+
+# Transformación de la matriz de información a un Dataframe
+base_exportar = as.data.frame(mat_info) %>% 
+  mutate(Información = c("b0",
+                      "b1",
+                      "b2",
+                      "Obs.",
+                      "Clústeres")) %>% 
+  select(Información, !Información); base_exportar
+
+# Exportación del dataframe con la información de las diferentes simulaciones de bootstrap a una tabla de latex
+xtable(base_exportar, type = "latex")

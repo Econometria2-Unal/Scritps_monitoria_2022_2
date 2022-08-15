@@ -1,0 +1,461 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Desestacionalización Series Económicas},
+  pdfauthor={Luis Alfonso Luna},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Desestacionalización Series Económicas}
+\author{Luis Alfonso Luna}
+\date{2021 - 2}
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(forecast) }\CommentTok{\#paquete más reciente disponible (fable)}
+\FunctionTok{library}\NormalTok{(seasonal) }\CommentTok{\#paquete más reciente disponible (fabletools)}
+\FunctionTok{library}\NormalTok{(quantmod) }
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{cargar-series-de-tiempo-macro-y-financieras-directamente-en-r}{%
+\section{Cargar Series de Tiempo Macro y financieras directamente en
+R}\label{cargar-series-de-tiempo-macro-y-financieras-directamente-en-r}}
+
+Usando el paquete QuantMod (Ryan \& Ulrich, 2020), podemos cargar
+directamente series de tiempo cuya fuente sea Yahoo Finance, FRED,
+MySQL, Csv, RData, Oanda, o Av.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{getSymbols}\NormalTok{(}\StringTok{"UNRATE"}\NormalTok{,}\AttributeTok{src =} \StringTok{"FRED"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "UNRATE"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(UNRATE)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(UNRATE, }\AttributeTok{subset =} \StringTok{"2010{-}01/2021{-}03"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{getSymbols}\NormalTok{(}\StringTok{"AAPL"}\NormalTok{, }\AttributeTok{src =} \StringTok{"yahoo"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "AAPL"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(AAPL)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{chartSeries}\NormalTok{(AAPL)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\hypertarget{descomposiciuxf3n-series-de-tiempo}{%
+\section{Descomposición series de
+tiempo}\label{descomposiciuxf3n-series-de-tiempo}}
+
+Toda serie de tiempo puede dividirse en al menos tres componentes:
+tendencia, estacionalidad (\textbf{no confundir con estacionareidad}) y
+ciclos. Usualmente se mezcla tendencia y ciclos, por lo que podemos
+descompner nuestras series de tiempo en:
+
+\begin{itemize}
+\tightlist
+\item
+  Tendencia-ciclo (a veces llamado solamente tendencia).
+\item
+  Estacional.
+\item
+  Todo lo demás (a veces llamado término error, \textbf{ojo}: no es el
+  mismo error de la regresión, no confundir; evitaremos ese nombre).
+\end{itemize}
+
+Si asumimos una composición aditiva, podemos representar cualquier serie
+de tiempo como:
+
+\[y_{t} = S_{t} + T_{t} + R_t,\]
+
+Donde \(y_t\) es la serie, \(S_t\) es la estacionalidad, \(T_t\) es la
+tendencia-ciclo y \(R_t\) es todo lo demás (remainder). Podemos asumir
+también una composición multiplicativa.
+
+\[y_{t} = S_{t} \times T_{t} \times R_t,\]
+
+Es correcto asumir una composición aditiva cuando la magnitud de las
+fluctuaciones estacionales no varía con el nivel de la serie de tiempo.
+Cuando la variación en \(S_{t}\) y/o \(T_{t}\) parece ser proporcional
+al nivel de la serie de tiempo, usamos multiplicativa. Usualmente se
+asume composición multiplicativa en series de tiempo económicas.
+
+Una alternativa a hacer descomposición multiplicativa es estabilizar los
+datos y luego asumir composición aditiva. Cuando la transformación es un
+logaritmo asumimos que es equivalente a hacer descomposición
+multiplicativa:
+
+\[y_{t} = S_{t} \times T_{t} \times R_t \quad\text{es equivalente a}\quad
+  \log y_{t} = \log S_{t} + \log T_{t} + \log R_t.\]
+
+Existen múltiples métodos para descomponer una serie, entre estos:
+
+\begin{itemize}
+\tightlist
+\item
+  Clásico.
+\item
+  X11.
+\item
+  Seats.
+\item
+  STL.
+\end{itemize}
+
+La descomposición es útil porque nos permite hacer mejores pronósticos,
+entender que hay debajo de la serie y encontrar algunas variables
+económicas (ej. PIB potencial).
+
+\hypertarget{muxe9todo-cluxe1sico-multiplicativo}{%
+\subsubsection{Método clásico
+(multiplicativo)}\label{muxe9todo-cluxe1sico-multiplicativo}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Si \(m\) es un número par, encuentre la tendencia ciclo
+  \(\hat{T}_{t}\) usando \(2 \times m\) -MA. Si \(m\) es impar,
+  encuentre la tendencia ciclo \(\hat{T}_{t}\) usando \(m-\mathrm{MA}\).
+\item
+  Calcule la serie sin tendencia: \(y_t - \hat{T}_t\).
+\item
+  Para estimar el componente estacional de cada temporada, encuentre el
+  promedio para esa temporada. Por ejemplo, si tiene valores mensuales,
+  el componente estacional de marzo es el promedio de todos los valores
+  de marzo en los datos. Esto da \(\hat{S}_t\).
+\item
+  El resto lo obtiene substrayendo:
+  \(\hat{R}_t = y_t - \hat{T}_t - \hat{S}_t\).
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{getSymbols}\NormalTok{(}\StringTok{"COLLRUNTTTTSTM"}\NormalTok{,}\AttributeTok{src=}\StringTok{"FRED"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "COLLRUNTTTTSTM"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td }\OtherTok{\textless{}{-}}\NormalTok{ COLLRUNTTTTSTM}
+\NormalTok{td }\OtherTok{\textless{}{-}}\NormalTok{ td[}\StringTok{"/2020{-}05"}\NormalTok{]}
+\NormalTok{td }\OtherTok{\textless{}{-}} \FunctionTok{ts}\NormalTok{(td,}\AttributeTok{start =} \FunctionTok{c}\NormalTok{(}\DecValTok{2007}\NormalTok{,}\DecValTok{01}\NormalTok{),}\AttributeTok{frequency =} \DecValTok{12}\NormalTok{)}
+\FunctionTok{autoplot}\NormalTok{(td)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{decompose}\NormalTok{(}\AttributeTok{type=}\StringTok{"multiplicative"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{autoplot}\NormalTok{() }\SpecialCharTok{+} \FunctionTok{xlab}\NormalTok{(}\StringTok{"Año"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Descomposión multiplicativa clásica de la Tasa de Desempleo"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+Tener en cuenta que:
+
+\begin{itemize}
+\tightlist
+\item
+  El cálculo de la tendencia no está disponible para los últimos y los
+  primeros periodos.
+\item
+  La tendencia suele suavizar mucho las caídas y subidas rápidas en los
+  datos.
+\item
+  Se asume que el componente cíclico se repite de año a año.
+\item
+  Mal método para recoger cambios en periodos cortos de tiempo.
+\end{itemize}
+
+\hypertarget{muxe9todo-x11}{%
+\subsection{Método X11}\label{muxe9todo-x11}}
+
+Es el método más usado, desarrollado en US Census Bureau. Está basado en
+el método clásico, pero corrige los inconvenientes expuestos
+anteriormente. Para más información mirar Dagum \& Bianconcini (2016).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{seas}\NormalTok{(}\AttributeTok{x11 =} \StringTok{""}\NormalTok{) }\OtherTok{{-}\textgreater{}}\NormalTok{ fit}
+\FunctionTok{autoplot}\NormalTok{(fit) }\SpecialCharTok{+}
+  \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Descomposión X11 de la Tasa de Desempleo"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+Se puede ver en el reminder, que el método X11 captura mejor los datos
+atípicos. Note también que el componente cíclico del ajuste estacional
+no es igual año a año.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{autoplot}\NormalTok{(td, }\AttributeTok{series=}\StringTok{"Tasa de desempleo"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{autolayer}\NormalTok{(}\FunctionTok{trendcycle}\NormalTok{(fit), }\AttributeTok{series=}\StringTok{"Tendencia"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{autolayer}\NormalTok{(}\FunctionTok{seasadj}\NormalTok{(fit), }\AttributeTok{series=}\StringTok{"Ajuste Estacional"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{xlab}\NormalTok{(}\StringTok{"Año"}\NormalTok{) }\SpecialCharTok{+} \FunctionTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Tasa Desempleo Colombia"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_colour\_manual}\NormalTok{(}\AttributeTok{values=}\FunctionTok{c}\NormalTok{(}\StringTok{"gray"}\NormalTok{,}\StringTok{"blue"}\NormalTok{,}\StringTok{"red"}\NormalTok{),}
+             \AttributeTok{breaks=}\FunctionTok{c}\NormalTok{(}\StringTok{"Tasa de desempleo"}\NormalTok{,}\StringTok{"Ajuste Estacional"}\NormalTok{,}\StringTok{"Tendencia"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+Puede ser hacer subgráficos mensuales del componente estacional. Así
+puede observarse los cambios en el componente estacional a través del
+tiempo.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fit }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{seasonal}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{ggsubseriesplot}\NormalTok{() }\SpecialCharTok{+} \FunctionTok{ylab}\NormalTok{(}\StringTok{"Componente Estacional"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\hypertarget{descomposiciuxf3n-seats}{%
+\subsection{Descomposición SEATS}\label{descomposiciuxf3n-seats}}
+
+SEATS significa ``Seasonal Extraction in ARIMA Time Series''.
+Desarrollado por el Banco de España, hoy es uno de los métodos más
+usados. Desgraciadamente solamente funciona con datos trimestrales y
+mensuales. En la práctica da resultados muy similares a X11.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{seas}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+\FunctionTok{autoplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{ggtitle}\NormalTok{(}\StringTok{"Descomposión SEATS de la Tasa de Desempleo"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\hypertarget{descomposiciuxf3n-stl}{%
+\subsection{Descomposición STL}\label{descomposiciuxf3n-stl}}
+
+Acrónimo de ``Seasonal and Trend decomposition using Loess'',
+desarrollado por Cleveland, Cleveland, McRae, \& Terpenning (1990).
+Tiene varias ventajas respecto a X11 y SEATS.
+
+\begin{itemize}
+\tightlist
+\item
+  Puede trabajar con cualquier tipo de estacionalidad.
+\item
+  El investigador puede controlar manualmente el componente de cambio
+  estacional.
+\item
+  El suavizado de la tendencia también puede ser controlado manualmente.
+\item
+  Robusto a datos atípicos.
+\end{itemize}
+
+Sin embargo hay que tener cuidado, ya que la utilidad del método reside
+completamente en los parámetros manuales.
+
+Los dos parámetros a elegir son la ``ventana'' tendencia-ciclo y la
+``ventana'' estacional. Valores más pequeños permiten cambios más
+rápidos. Ambos parámetros deben ser números impares, donde t.window es
+el número de observaciones consecutivas que se usan al estimar la
+tendencia-ciclo; s.window es el número de años consecutivos del
+componente estacional.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td[,}\DecValTok{1}\NormalTok{] }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{stl}\NormalTok{(}\AttributeTok{t.window=}\DecValTok{13}\NormalTok{, }\AttributeTok{s.window=}\StringTok{"periodic"}\NormalTok{, }\AttributeTok{robust=}\ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{autoplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+Puedo usar mstl() para que haga la composición de manera automática. En
+este caso no hay mucha diferencia con X11.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mstl}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{autoplot}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+Para obtener la serie desetacionalizada basta con usar la función
+\emph{final()}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{td\_desest }\OtherTok{\textless{}{-}}\NormalTok{ td }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{seas}\NormalTok{(}\AttributeTok{x11=}\StringTok{""}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{final}\NormalTok{()}
+\FunctionTok{plot}\NormalTok{(td\_desest)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{autoplot}\NormalTok{(td\_desest) }\SpecialCharTok{+} \FunctionTok{autolayer}\NormalTok{(td)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-15-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pronost }\OtherTok{\textless{}{-}} \FunctionTok{stlf}\NormalTok{(td, }\AttributeTok{method =} \StringTok{"naive"}\NormalTok{)}
+\FunctionTok{autoplot}\NormalTok{(pronost)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Desestacionalización-Series-de-Tiempo-Económicas_files/figure-latex/unnamed-chunk-16-1.pdf}
+
+\end{document}
